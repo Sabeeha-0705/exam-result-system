@@ -2,38 +2,53 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/2 * * * *')
+        pollSCM('H/2 * * * *')   // every 2 minutes Git check
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Sabeeha-0705/exam-result-system.git'
+                echo 'Cloning repository...'
+                checkout scm
             }
         }
 
-        stage('Setup Node') {
-            steps {
-                bat 'node -v'
-                bat 'npm -v'
-            }
-        }
-
-        stage('Install Backend Dependencies') {
+        stage('Backend Install & Test') {
             steps {
                 dir('backend') {
+                    echo 'Installing backend dependencies'
                     bat 'npm install'
-                }
-            }
-        }
-
-        stage('Backend Build Check') {
-            steps {
-                dir('backend') {
                     bat 'node -v'
                 }
             }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo 'Building Docker image'
+                bat 'docker build -t exam-result-app .'
+            }
+        }
+
+        stage('Docker Run') {
+            steps {
+                echo 'Running Docker container'
+                bat '''
+                docker stop exam-result-container || exit 0
+                docker rm exam-result-container || exit 0
+                docker run -d -p 3000:3000 --name exam-result-container exam-result-app
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline Success – App Deployed using Docker!'
+        }
+        failure {
+            echo '❌ Pipeline Failed'
         }
     }
 }
