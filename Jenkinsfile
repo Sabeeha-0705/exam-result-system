@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/2 * * * *')   // every 2 minutes Git check
+        pollSCM('H/2 * * * *')
     }
 
     environment {
-        PORT = '3000'
-        MONGO_URI = 'mongodb://localhost:27017/examdb'
+        PORT = '5000'
+        MONGO_URI = credentials('MONGO_URI')
     }
 
     stages {
@@ -19,13 +19,12 @@ pipeline {
             }
         }
 
-        stage('Backend Install & Test') {
+        stage('Backend Install') {
             steps {
                 dir('backend') {
                     echo 'Installing backend dependencies'
-                    bat 'npm install'
                     bat 'node -v'
-                    bat 'npm start'
+                    bat 'npm install'
                 }
             }
         }
@@ -34,7 +33,8 @@ pipeline {
             steps {
                 dir('backend') {
                     echo 'Building Docker image'
-                   bat 'docker build -t exam-result-app backend'
+                    bat 'docker build -t exam-result-app .'
+                }
             }
         }
 
@@ -44,9 +44,10 @@ pipeline {
                 bat '''
                 docker stop exam-result-container || exit 0
                 docker rm exam-result-container || exit 0
-                docker run -d -p 3000:3000 ^
-                  -e PORT=3000 ^
-                  -e MONGO_URI=mongodb://localhost:27017/examdb ^
+
+                docker run -d -p 5000:5000 ^
+                  -e PORT=5000 ^
+                  -e MONGO_URI=%MONGO_URI% ^
                   --name exam-result-container exam-result-app
                 '''
             }
@@ -55,10 +56,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline Success – App Deployed using Docker!'
+            echo '✅ Pipeline Success – Docker + MongoDB Atlas Connected!'
         }
         failure {
-            echo '❌ Pipeline Failed'
+            echo '❌ Pipeline Failed – Check Console Output'
         }
     }
 }
