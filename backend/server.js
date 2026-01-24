@@ -9,22 +9,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Atlas URI
+// ✅ MongoDB Atlas URI from environment
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error("❌ MONGO_URI not defined");
+  console.error("❌ MONGO_URI not defined in environment variables");
   process.exit(1);
 }
 
+// ✅ MongoDB connection
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("✅ MongoDB Atlas Connected"))
   .catch((err) => {
-    console.error(err);
+    console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1);
   });
 
+// Routes
 app.use("/api/results", resultRoutes);
 
 // ✅ PORT from env with fallback

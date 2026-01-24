@@ -33,7 +33,9 @@ pipeline {
 
         stage('Docker Run') {
             steps {
-                withCredentials([string(credentialsId: 'MONGO_URI', variable: 'MONGO_URI')]) {
+                withCredentials([
+                    string(credentialsId: 'MONGO_URI', variable: 'MONGO_URI')
+                ]) {
                     bat '''
                     docker stop exam-result-container || exit 0
                     docker rm exam-result-container || exit 0
