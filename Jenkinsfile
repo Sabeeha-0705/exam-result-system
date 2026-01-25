@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     options {
-        timestamps()          // console output clear-aa irukum
+        timestamps()   // console output clean
     }
 
     triggers {
-        pollSCM('H/2 * * * *')   // every 2 minutes Git check
+        pollSCM('H/2 * * * *')   // every 2 minutes
     }
 
     stages {
@@ -27,17 +27,21 @@ pipeline {
             }
         }
 
-        // 🔍 SONARQUBE ANALYSIS STAGE
+        // 🔍 SONARQUBE ANALYSIS
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {   // 👈 Manage Jenkins → System-la add pannina name
-                    bat '''
-                    sonar-scanner ^
-                      -Dsonar.projectKey=exam-result-system ^
-                      -Dsonar.projectName=Exam Result System ^
-                      -Dsonar.sources=backend,frontend ^
-                      -Dsonar.host.url=http://localhost:9000
-                    '''
+                script {
+                    // Jenkins Tool name (Manage Jenkins → Tools)
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        bat """
+                        "${scannerHome}\\bin\\sonar-scanner.bat" ^
+                          -Dsonar.projectKey=exam-result-system ^
+                          -Dsonar.projectName="Exam Result System" ^
+                          -Dsonar.sources=backend,frontend
+                        """
+                    }
                 }
             }
         }
