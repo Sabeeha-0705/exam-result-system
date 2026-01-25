@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exam-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exam-backend
+  template:
+    metadata:
+      labels:
+        app: exam-backend
+    spec:
+      containers:
+        - name: exam-backend
+          image: exam-result-app:latest     # ✅ image tag fixed
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret        # ⚠️ secret must exist
+                  key: MONGO_URI
