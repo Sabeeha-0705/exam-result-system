@@ -2,18 +2,23 @@ pipeline {
     agent any
 
     options {
-        timestamps()   // console output clean
+        timestamps()
     }
 
     triggers {
         pollSCM('H/2 * * * *')   // every 2 minutes
     }
 
+    environment {
+        IMAGE_NAME = "exam-result-app"
+        IMAGE_TAG  = "latest"
+    }
+
     stages {
 
         stage('Checkout Code') {
             steps {
-                echo 'Cloning repository...'
+                echo '📥 Cloning repository...'
                 checkout scm
             }
         }
@@ -27,13 +32,11 @@ pipeline {
             }
         }
 
-        // 🔍 SONARQUBE ANALYSIS
+        // 🔍 SONARQUBE
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Jenkins Tool name (Manage Jenkins → Tools)
                     def scannerHome = tool 'SonarScanner'
-
                     withSonarQubeEnv('SonarQube') {
                         bat """
                         "${scannerHome}\\bin\\sonar-scanner.bat" ^
@@ -46,39 +49,33 @@ pipeline {
             }
         }
 
+        // 🐳 DOCKER BUILD
         stage('Docker Build') {
             steps {
                 dir('backend') {
-                    bat 'docker build -t exam-result-app .'
+                    bat "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
         }
 
-        stage('Docker Run') {
+        // ☸️ KUBERNETES DEPLOY
+        stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'MONGO_URI', variable: 'MONGO_URI')
-                ]) {
-                    bat '''
-                    docker stop exam-result-container || exit 0
-                    docker rm exam-result-container || exit 0
-
-                    docker run -d -p 5000:5000 ^
-                      -e MONGO_URI=%MONGO_URI% ^
-                      -e PORT=5000 ^
-                      --name exam-result-container exam-result-app
-                    '''
-                }
+                echo '🚀 Deploying to Kubernetes...'
+                bat '''
+                kubectl apply -f k8s/backend/deployment.yaml
+                kubectl apply -f k8s/backend/service.yaml
+                '''
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline Success – SonarQube + Docker Deployment Completed!'
+            echo '✅ CI/CD Success – SonarQube + Docker + Kubernetes Deployment Completed!'
         }
         failure {
-            echo '❌ Pipeline Failed – Check Console Output'
+            echo '❌ Pipeline Failed – Check logs'
         }
     }
-}
+} 
