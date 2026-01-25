@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()          // console output clear-aa irukum
+    }
+
     triggers {
         pollSCM('H/2 * * * *')   // every 2 minutes Git check
     }
@@ -39,6 +43,7 @@ pipeline {
                     bat '''
                     docker stop exam-result-container || exit 0
                     docker rm exam-result-container || exit 0
+
                     docker run -d -p 5000:5000 ^
                       -e MONGO_URI=%MONGO_URI% ^
                       -e PORT=5000 ^
