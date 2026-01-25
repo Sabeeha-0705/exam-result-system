@@ -3,18 +3,23 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
-const resultRoutes = require("./routes/resultRoutes");
-
 /* =========================
    🔹 Prometheus Setup
 ========================= */
 const client = require("prom-client");
 
-// collect default Node.js metrics (CPU, memory, event loop, etc.)
+// Collect default Node.js metrics
 client.collectDefaultMetrics();
 
-// custom registry (optional but clean)
+// Custom registry
 const register = client.register;
+
+// HTTP request duration metric
+const httpRequestDuration = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "Duration of HTTP requests in seconds",
+  labelNames: ["method", "route", "status"],
+});
 
 /* =========================
    🔹 Express App
@@ -22,6 +27,19 @@ const register = client.register;
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Track request duration
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+  res.on("finish", () => {
+    end({
+      method: req.method,
+      route: req.route?.path || req.path,
+      status: res.statusCode,
+    });
+  });
+  next();
+});
 
 /* =========================
    🔹 MongoDB Connection
@@ -34,10 +52,7 @@ if (!MONGO_URI) {
 }
 
 mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(MONGO_URI)
   .then(() => console.log("✅ MongoDB Atlas Connected"))
   .catch((err) => {
     console.error("❌ MongoDB connection failed:", err.message);
@@ -47,14 +62,15 @@ mongoose
 /* =========================
    🔹 Routes
 ========================= */
+const resultRoutes = require("./routes/resultRoutes");
 app.use("/api/results", resultRoutes);
 
-// 🔹 Health check (optional but good practice)
+// 🔹 Health check
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "UP" });
 });
 
-// 🔹 Prometheus metrics endpoint ⭐ IMPORTANT
+// 🔹 Prometheus metrics endpoint ⭐
 app.get("/metrics", async (req, res) => {
   res.set("Content-Type", register.contentType);
   res.end(await register.metrics());
