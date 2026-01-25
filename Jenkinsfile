@@ -27,6 +27,21 @@ pipeline {
             }
         }
 
+        // 🔍 SONARQUBE ANALYSIS STAGE
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {   // 👈 Manage Jenkins → System-la add pannina name
+                    bat '''
+                    sonar-scanner ^
+                      -Dsonar.projectKey=exam-result-system ^
+                      -Dsonar.projectName=Exam Result System ^
+                      -Dsonar.sources=backend,frontend ^
+                      -Dsonar.host.url=http://localhost:9000
+                    '''
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 dir('backend') {
@@ -56,7 +71,7 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline Success – App Deployed using Docker!'
+            echo '✅ Pipeline Success – SonarQube + Docker Deployment Completed!'
         }
         failure {
             echo '❌ Pipeline Failed – Check Console Output'
