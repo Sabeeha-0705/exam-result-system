@@ -116,7 +116,7 @@
 
 <body>
 
-<!-- 🔐 LOGIN PAGE -->
+<!-- 🔐 LOGIN -->
 <div class="card active" id="loginCard">
   <h2>Login</h2>
   <input type="text" id="username" placeholder="Username">
@@ -125,7 +125,7 @@
   <div class="error" id="loginError"></div>
 </div>
 
-<!-- 📄 RESULT PAGE -->
+<!-- 📄 RESULT -->
 <div class="card" id="resultCard">
   <h2>Exam Result Portal</h2>
 
@@ -145,7 +145,7 @@
 </div>
 
 <script>
-  /* STEP 5 – SIMPLE LOGIN */
+  /* LOGIN */
   function login() {
     const user = document.getElementById("username").value;
     const pass = document.getElementById("password").value;
@@ -159,7 +159,7 @@
     }
   }
 
-  /* STEP 1 + 2 – TABLE + LOADER */
+  /* FETCH RESULT */
   async function getResult() {
     const regno = document.getElementById("regno").value;
     const loader = document.getElementById("loader");
@@ -174,21 +174,24 @@
     resultDiv.innerHTML = "";
 
     try {
-      const res = await fetch(`http://localhost:5000/api/results/${regno}`);
-      const data = await res.json();
-
-      loader.style.display = "none";
+      const res = await fetch(
+        `http://127.0.0.1:5000/api/results/${regno}`
+      );
 
       if (!res.ok) {
+        loader.style.display = "none";
         resultDiv.innerHTML = "<p class='error'>Result not found</p>";
         return;
       }
+
+      const data = await res.json();
+      loader.style.display = "none";
 
       resultDiv.innerHTML = `
         <table>
           <tr><th>Field</th><th>Value</th></tr>
           <tr><td>Name</td><td>${data.name}</td></tr>
-          <tr><td>Register No</td><td>${data.regno}</td></tr>
+          <tr><td>Register No</td><td>${data.registerNumber}</td></tr>
           <tr><td>Subject</td><td>${data.subject}</td></tr>
           <tr><td>Marks</td><td>${data.marks}</td></tr>
           <tr><td>Status</td><td>${data.status}</td></tr>
